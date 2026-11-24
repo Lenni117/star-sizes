@@ -9,4 +9,6 @@ Mobile size comparison of 16 stars drawn to a common scale. Single static file: 
 - White dwarfs: Gaia EDR3 catalogue, Gentile Fusillo et al. 2021.
 - Ages are rough typical-lifetime ranges and are labelled as estimates in the page.
 
+- Typeface: Arcon Regular by Martin Zarth, SIL Open Font License 1.1 (see `OFL-Arcon.txt`), embedded unmodified.
+
 Because the HYG data is CC BY-SA 4.0, this page is shared under CC BY-SA 4.0 as well.
