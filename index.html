@@ -1,0 +1,438 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#000000">
+<title>STAR SIZES</title>
+<meta name="description" content="Stars drawn to a common scale, from KY Cygni to white dwarfs.">
+<style>
+  :root{--ink:#150D0D;--yellow:#F5BF0F;--blue:#2D11E9;--grey:#CFCFCF;--red:#FC0C04;--cyan:#10EDF5;--orange:#F2720C;--acc:#fff;
+    --head:"Collapse","Arial Black","Helvetica Neue",Helvetica,Arial,sans-serif;--sans:"Helvetica Neue",Helvetica,Arial,sans-serif;
+    --sat:env(safe-area-inset-top,0px);--sab:env(safe-area-inset-bottom,0px);--sal:env(safe-area-inset-left,0px);--sar:env(safe-area-inset-right,0px)}
+  *{box-sizing:border-box;border-radius:0;-webkit-tap-highlight-color:transparent}
+  [hidden]{display:none!important}
+  html,body{margin:0;height:100%;background:#000;color:#fff;font:14px/1.4 var(--sans);overflow:hidden;overscroll-behavior:none;touch-action:none;-webkit-user-select:none;user-select:none}
+  canvas{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none}
+  button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+
+  /* ---------- top bar ---------- */
+  #top{position:fixed;left:0;right:0;top:0;height:calc(58px + var(--sat));padding:var(--sat) calc(14px + var(--sar)) 0 calc(14px + var(--sal));display:flex;align-items:center;justify-content:space-between;z-index:5;
+    background:linear-gradient(#000 0%,rgba(0,0,0,.78) 60%,rgba(0,0,0,0))}
+  #brand{font:400 23px/1 var(--head);letter-spacing:.01em}
+  #menuBtn{width:42px;height:42px;border:2px solid #fff;background:rgba(0,0,0,.55);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px}
+  #menuBtn i{display:block;width:20px;height:2px;background:#fff}
+  #hint{position:fixed;left:calc(14px + var(--sal));top:calc(54px + var(--sat));font:700 9.5px/1.2 var(--sans);letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.75);z-index:4;transition:opacity .6s;pointer-events:none}
+
+  /* ---------- right rail ---------- */
+  #rail{position:fixed;right:calc(8px + var(--sar));top:50%;transform:translateY(-50%);display:flex;flex-direction:column;align-items:center;gap:6px;z-index:4}
+  .rb{width:38px;height:38px;border:2px solid #fff;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;font:700 10px/1 var(--sans);letter-spacing:.08em}
+  .rb:active{background:#fff;color:#000}
+  .rb svg{width:14px;height:14px;fill:currentColor}
+  #ticks{display:flex;flex-direction:column;align-items:center}
+  .tick{width:38px;height:13px;display:flex;align-items:center;justify-content:center}
+  .tick:before{content:"";width:9px;height:3px;background:rgba(255,255,255,.4)}
+  .tick.on:before{width:22px;height:6px;background:var(--acc)}
+
+  /* ---------- info panel (bottom left) ---------- */
+  #info{position:fixed;left:0;bottom:0;width:min(calc(100% - 58px - var(--sar)),336px);padding:12px 14px calc(12px + var(--sab)) calc(14px + var(--sal));background:rgba(0,0,0,.82);border-top:3px solid var(--acc);border-right:3px solid var(--acc);z-index:4}
+  #iCat{display:flex;align-items:center;gap:7px;font:700 9.5px/1.2 var(--sans);letter-spacing:.14em;text-transform:uppercase;color:#bdbdbd}
+  #sw{width:9px;height:9px;background:var(--acc);flex:none}
+  #iName{margin:5px 0 8px;font:400 26px/1 var(--head);text-transform:uppercase;overflow-wrap:anywhere}
+  .row{display:grid;grid-template-columns:58px 1fr auto;align-items:baseline;gap:6px;padding:4px 0;border-top:1px solid rgba(255,255,255,.22)}
+  .row .l{font:700 9px var(--sans);letter-spacing:.14em;text-transform:uppercase;color:#a9a9a9}
+  .row .v{font:700 14px/1.2 var(--sans);font-variant-numeric:tabular-nums}
+  .row .v small{display:block;font:400 10.5px/1.25 var(--sans);color:#a9a9a9}
+  .tag{font:700 8px/1 var(--sans);letter-spacing:.1em;text-transform:uppercase;padding:3px 4px;background:#fff;color:var(--ink);white-space:nowrap;align-self:center}
+  .tag.measured{background:var(--cyan)}.tag.derived{background:var(--yellow)}.tag.estimate{background:var(--orange)}
+  .tag.model,.tag.spectroscopic,.tag.literature{background:var(--grey)}
+  #iScale{margin-top:6px;font:400 10.5px/1.3 var(--sans);color:#c4c4c4}
+  #iSrc{margin-top:3px;font:400 9.5px/1.3 var(--sans);color:#8d8d8d}
+  .ov #info{display:none}
+
+  /* ---------- menu sheet ---------- */
+  #menu{position:fixed;inset:0;background:var(--yellow);color:var(--ink);z-index:10;overflow-y:auto;overscroll-behavior:contain;touch-action:pan-y;-webkit-user-select:text;user-select:text;padding:var(--sat) 0 calc(24px + var(--sab))}
+  .mhead{position:sticky;top:0;display:flex;align-items:center;justify-content:space-between;padding:calc(12px) calc(14px + var(--sar)) 12px calc(14px + var(--sal));background:var(--yellow);border-bottom:3px solid var(--ink)}
+  .mt{font:400 23px/1 var(--head)}
+  #menuClose{border:2px solid var(--ink);padding:10px 12px;font:700 11px/1 var(--sans);letter-spacing:.14em}
+  .msec{padding:16px calc(14px + var(--sar)) 14px calc(14px + var(--sal));border-bottom:3px solid var(--ink)}
+  .msec h3{margin:0 0 10px;font:400 18px/1.1 var(--head);text-transform:uppercase}
+  #mlist{list-style:none;margin:0;padding:0}
+  #mlist li button{display:grid;grid-template-columns:28px 1fr auto;gap:8px;width:100%;text-align:left;padding:9px 0;border-top:1px solid rgba(21,13,13,.35);align-items:baseline}
+  #mlist li:first-child button{border-top:0}
+  #mlist .n{font:700 10px var(--sans);letter-spacing:.1em}
+  #mlist .nm{font:400 17px/1 var(--head);text-transform:uppercase}
+  #mlist .rv{font:400 12px var(--sans);font-variant-numeric:tabular-nums}
+  .bigbtn{display:block;width:100%;text-align:left;padding:14px;background:var(--ink);color:var(--yellow);font:400 18px/1 var(--head);text-transform:uppercase}
+  .msec p,.msec li{font:400 13px/1.45 var(--sans);margin:0 0 7px}
+  .msec ul{margin:0;padding-left:16px}
+  .lg{display:grid;grid-template-columns:auto 1fr;gap:6px 10px;align-items:center;font:400 12.5px/1.35 var(--sans)}
+  .msec a{color:var(--ink);font:700 12px var(--sans);letter-spacing:.12em;text-transform:uppercase}
+  .msec .tag{display:inline-block;color:var(--ink)}
+  @media(max-height:640px){#iSrc{display:none}#iName{font-size:22px}}
+</style>
+</head>
+<body>
+<canvas id="cv"></canvas>
+
+<header id="top">
+  <div id="brand">STAR SIZES</div>
+  <button id="menuBtn" aria-label="Open menu"><i></i><i></i><i></i></button>
+</header>
+<div id="hint">Swipe up · smaller stars</div>
+
+<nav id="rail" aria-label="Star navigation">
+  <button class="rb" id="up" aria-label="Previous, bigger star"><svg viewBox="0 0 14 14"><path d="M7 2 13 11H1z"/></svg></button>
+  <div id="ticks"></div>
+  <button class="rb" id="down" aria-label="Next, smaller star"><svg viewBox="0 0 14 14"><path d="M7 12 1 3h12z"/></svg></button>
+  <button class="rb" id="allBtn" aria-label="Overview of all stars">ALL</button>
+</nav>
+
+<section id="info" aria-live="polite">
+  <div id="iCat"><i id="sw"></i><span id="iCatT"></span></div>
+  <div id="iName"></div>
+  <div class="row"><span class="l">Radius</span><span class="v" id="vR"></span><span class="tag" id="tR"></span></div>
+  <div class="row"><span class="l">Temp.</span><span class="v" id="vT"></span><span class="tag" id="tT"></span></div>
+  <div class="row"><span class="l">Light</span><span class="v" id="vL"></span><span class="tag" id="tL"></span></div>
+  <div class="row"><span class="l">Age</span><span class="v" id="vA"></span><span class="tag" id="tA"></span></div>
+  <div id="iScale"></div>
+  <div id="iSrc"></div>
+</section>
+
+<div id="menu" hidden>
+  <div class="mhead"><span class="mt">MENU</span><button id="menuClose">CLOSE</button></div>
+  <div class="msec"><h3>View</h3><button class="bigbtn" id="mAll">All stars at once</button></div>
+  <div class="msec"><h3>Go to a star</h3><ol id="mlist" style="list-style:none;margin:0;padding:0"></ol></div>
+  <div class="msec"><h3>Reading the values</h3>
+    <div class="lg">
+      <span class="tag measured">measured</span><span>Directly observed, e.g. an angular diameter converted with a distance.</span>
+      <span class="tag derived">derived</span><span>Calculated from other values (for example L from R and T).</span>
+      <span class="tag spectroscopic">spectroscopic</span><span>Fitted to the star’s spectrum.</span>
+      <span class="tag model">model fit</span><span>Result of a model-atmosphere fit.</span>
+      <span class="tag literature">literature</span><span>Taken from a published paper.</span>
+      <span class="tag estimate">estimate</span><span>A rough range from typical stellar lifetimes. Not part of any data source.</span>
+      <span class="tag" style="background:#fff">reference</span><span>Nominal or textbook value.</span>
+    </div>
+    <p style="margin-top:12px">Sizes are drawn to a common scale. Catalogues that use different methods are never merged: every star shows the source of its own numbers.</p>
+  </div>
+  <div class="msec"><h3>Sources</h3>
+    <ul>
+      <li>Red supergiant KY Cyg: Levesque et al. 2005, model-atmosphere fits.</li>
+      <li>Yellow hypergiant RW Cep: 2026 survey, angular diameter and Gaia group distance.</li>
+      <li>Named stars: JMDC measured angular diameters (Duvert 2016) with distances from the HYG database v4.1 (CC BY-SA 4.0). Temperatures come from B−V colour and are least reliable for hot stars.</li>
+      <li>O stars: IACOB spectroscopy (Holgado et al. 2018). Radius and luminosity derived with HYG distances.</li>
+      <li>White dwarfs: Gaia EDR3 catalogue, Gentile Fusillo et al. 2021. Radius from mass and surface gravity.</li>
+      <li>Sun and Earth: nominal values.</li>
+      <li>Ages: typical lifetimes for each kind of star, shown as estimates.</li>
+    </ul>
+  </div>
+</div>
+
+<script>
+const S=[{"name": "KY Cyg", "cat": "Red supergiant", "R": 2850.0, "T": 3500.0, "L": 1096478.196143185, "tags": {"R": "derived", "T": "model fit", "L": "derived"}, "src": "Levesque et al. 2005 · MARCS model fit · L from bolometric magnitude", "age": "≈ 5–15 Myr", "ageTag": "estimate", "id": 0}, {"name": "RW Cep", "cat": "Yellow hypergiant", "R": 902.0, "T": 4200.0, "L": 229086.76527677747, "tags": {"R": "measured", "T": "literature", "L": "derived"}, "src": "Angular diameter × Gaia group distance (2026 survey) · literature T", "age": "≈ 5–10 Myr", "ageTag": "estimate", "id": 1}, {"name": "Betelgeuse", "cat": "Red supergiant", "R": 740.30122232088, "T": 3793.5064935064934, "L": 102252.74378622502, "tags": {"R": "measured", "T": "derived", "L": "derived"}, "src": "JMDC interferometry × HYG distance · T from B−V colour · L from R and T", "age": "≈ 8–10 Myr", "ageTag": "estimate", "id": 2}, {"name": "Deneb", "cat": "Blue-white supergiant", "R": 112.635800963488, "T": 9105.706876090442, "L": 78578.23626930937, "tags": {"R": "measured", "T": "derived", "L": "derived"}, "src": "JMDC interferometry × HYG distance · T from B−V colour · L from R and T", "age": "≈ 10–20 Myr", "ageTag": "estimate", "id": 3}, {"name": "Mirfak", "cat": "Yellow-white supergiant", "R": 51.754595238200004, "T": 6476.334733465545, "L": 4245.312778458427, "tags": {"R": "measured", "T": "derived", "L": "derived"}, "src": "JMDC interferometry × HYG distance · T from B−V colour · L from R and T", "age": "≈ 50–90 Myr", "ageTag": "estimate", "id": 4}, {"name": "Aldebaran", "cat": "Orange giant", "R": 44.39926676955201, "T": 3737.231177293504, "L": 346.4544622265206, "tags": {"R": "measured", "T": "derived", "L": "derived"}, "src": "JMDC interferometry × HYG distance · T from B−V colour · L from R and T", "age": "≈ 5–7 Gyr", "ageTag": "estimate", "id": 5}, {"name": "Arcturus", "cat": "Orange giant", "R": 24.449299674000002, "T": 4233.601329819582, "L": 173.00848113390353, "tags": {"R": "measured", "T": "derived", "L": "derived"}, "src": "JMDC interferometry × HYG distance · T from B−V colour · L from R and T", "age": "≈ 6–8 Gyr", "ageTag": "estimate", "id": 6}, {"name": "HD 195592", "cat": "O-type supergiant", "R": 22.814528867563627, "T": 28000.0, "L": 288237.07718314923, "tags": {"R": "derived", "T": "spectroscopic", "L": "derived"}, "src": "IACOB O-star spectroscopy (Holgado 2018) · R, L from HYG distance and magnitude", "age": "≈ 4–7 Myr", "ageTag": "estimate", "id": 7}, {"name": "Mintaka", "cat": "O-type bright giant", "R": 11.037484016075828, "T": 30100.0, "L": 90095.03700884126, "tags": {"R": "derived", "T": "spectroscopic", "L": "derived"}, "src": "IACOB O-star spectroscopy (Holgado 2018) · R, L from HYG distance and magnitude", "age": "≈ 4–8 Myr", "ageTag": "estimate", "id": 8}, {"name": "Procyon", "cat": "Yellow-white subgiant", "R": 2.0780799996000003, "T": 6714.3008688410055, "L": 7.907194615162693, "tags": {"R": "measured", "T": "derived", "L": "derived"}, "src": "JMDC interferometry × HYG distance · T from B−V colour · L from R and T", "age": "≈ 2–3 Gyr", "ageTag": "estimate", "id": 9}, {"name": "Sirius", "cat": "White main-sequence star", "R": 1.6845961306494002, "T": 10014.343360926072, "L": 25.71438960424463, "tags": {"R": "measured", "T": "derived", "L": "derived"}, "src": "JMDC interferometry × HYG distance · T from B−V colour · L from R and T", "age": "≈ 200–300 Myr", "ageTag": "estimate", "id": 10}, {"name": "Sun", "cat": "Yellow dwarf", "R": 1.0, "T": 5772.0, "L": 1.0, "tags": {"R": "definition", "T": "definition", "L": "definition"}, "src": "Nominal solar values (HYG entry Sol)", "age": "≈ 4.6 Gyr", "ageTag": "reference", "id": 11}, {"name": "Kapteyn Star", "cat": "Red dwarf", "R": 0.2910123530208, "T": 3729.9553432145367, "L": 0.014768353810968944, "tags": {"R": "measured", "T": "derived", "L": "derived"}, "src": "JMDC interferometry × HYG distance · T from B−V colour · L from R and T", "age": "≈ 8–11 Gyr", "ageTag": "estimate", "id": 12}, {"name": "White dwarf", "cat": "Hot white dwarf, typical", "R": 0.015491386255789297, "T": 17900.01, "L": 0.022196697830349325, "tags": {"R": "derived", "T": "model fit", "L": "derived"}, "src": "Gaia EDR3 white-dwarf fit (Gentile Fusillo 2021) · WD J051516.94-40 · R from mass and log g", "age": "cooling age ≈ 0.1–0.2 Gyr", "ageTag": "estimate", "id": 13}, {"name": "Earth", "cat": "Reference planet", "R": 0.009157682909299986, "T": null, "L": null, "earth": true, "tags": {"R": "definition", "T": null, "L": null}, "src": "Mean radius 6 371 km", "age": "4.54 Gyr", "ageTag": "reference", "id": 14}, {"name": "Cool white dwarf", "cat": "Cool white dwarf", "R": 0.008803566878522337, "T": 4999.82, "L": 4.3634451765224137e-05, "tags": {"R": "derived", "T": "model fit", "L": "derived"}, "src": "Gaia EDR3 white-dwarf fit (Gentile Fusillo 2021) · WD J154026.03+76 · R from mass and log g", "age": "cooling age ≈ 4–8 Gyr", "ageTag": "estimate", "id": 15}];
+const N=S.length;
+const $=id=>document.getElementById(id);
+const clamp=(x,a,b)=>Math.min(b,Math.max(a,x));
+const lerp=(a,b,t)=>a+(b-a)*t;
+const sstep=t=>t*t*(3-2*t);
+const RSUN_KM=695700, AU_KM=1.496e8, EARTH_R=6371/695700, NB="\u202f";
+const rgba=(c,a)=>`rgba(${Math.round(c[0])},${Math.round(c[1])},${Math.round(c[2])},${a})`;
+const lum=c=>(0.299*c[0]+0.587*c[1]+0.114*c[2])/255;
+function bb(T){ // blackbody temperature -> sRGB (Tanner Helland approximation)
+  T=clamp(T,1000,40000)/100;let r,g,b;
+  r=T<=66?255:329.698727446*Math.pow(T-60,-0.1332047592);
+  g=T<=66?99.4708025861*Math.log(T)-161.1195681661:288.1221695283*Math.pow(T-60,-0.0755148492);
+  b=T>=66?255:(T<=19?0:138.5177312231*Math.log(T-10)-305.0447927307);
+  return [clamp(r,0,255),clamp(g,0,255),clamp(b,0,255)];
+}
+const grp=n=>Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g,NB);
+const SUP="⁰¹²³⁴⁵⁶⁷⁸⁹";
+const sup=n=>String(n).replace("-","⁻").replace(/\d/g,d=>SUP[d]);
+function num(x){
+  if(x==null)return "–";
+  const a=Math.abs(x);
+  if(a>=1e5||(a<1e-3&&a>0)){const e=Math.floor(Math.log10(a));return (x/Math.pow(10,e)).toFixed(2).replace(/\.?0+$/,"")+"×10"+sup(e);}
+  if(a>=1000)return grp(x);
+  if(a>=100)return x.toFixed(0);
+  if(a>=10)return x.toFixed(1);
+  if(a>=1)return x.toFixed(2);
+  return x.toPrecision(2);
+}
+function lenText(R){const km=R*RSUN_KM;
+  if(km>=7.5e7){const au=km/AU_KM;return au.toFixed(au>=10?1:2)+" AU";}
+  if(km>=1e6)return (km/1e6).toFixed(km>=1e7?1:2)+" million km";
+  return grp(km)+" km";}
+const pxText=v=>v<0.01?"<0.01 px":v<1?v.toFixed(2)+" px":v<10?v.toFixed(1)+" px":grp(v)+" px";
+
+// ---------- data prep ----------
+S.forEach(s=>{
+  s.col=s.T?bb(s.T):[91,155,255];
+  s.g=s.earth?0.02:clamp((Math.log10(s.L)+5)/11,0,1);          // log-luminosity 0..1 (1e-5 .. 1e6 Lsun)
+  const a=s.col.map((v,i)=>v*0.55+255*0.45);                    // accent: lifted towards white so it reads on black
+  s.acc=lum(s.col)<0.45?a:s.col;
+});
+const Y=[0];                                                      // vertical world layout in solar radii: big on top, small below
+for(let i=0;i<N-1;i++){const Di=2*S[i].R,Dn=2*S[i+1].R;Y.push(Y[i]+S[i].R+(0.5*Dn+0.03*Di)+S[i+1].R);}
+
+// ---------- state ----------
+const cv=$("cv"), cx=cv.getContext("2d");
+let TS=58,PINY=100,KB=100,INFOH=0,W=0,H=0,DPR=1,CYF=0,FIT=0,LZ=[],OV={s:1,cx:0,y:[],r:[],rh:[]},G=[];
+let p=0,pT=0,ov=0,ovT=0,last=performance.now(),curIdx=-1,lastScaleTxt="";
+const PITCH=190;
+
+function infoMaxH(){            // tallest info panel over all stars, so the stage never jumps between stars
+  if(document.body.classList.contains("ov"))return INFOH;
+  const keep=curIdx<0?0:curIdx,sc=$("iScale"),old=sc.textContent;
+  sc.textContent="On this screen: Sun ⌀ 1 000 px · Earth ⌀ 0.00 px";
+  let mx=0;for(let i=0;i<N;i++){setInfo(i);mx=Math.max(mx,$("info").offsetHeight);}
+  setInfo(keep);sc.textContent=old;return mx;
+}
+function layout(){
+  W=innerWidth;H=innerHeight;DPR=Math.min(3,window.devicePixelRatio||1);
+  cv.width=Math.round(W*DPR);cv.height=Math.round(H*DPR);
+  TS=Math.max(52,Math.round($("top").getBoundingClientRect().bottom));
+  const ih=infoMaxH();if(ih>0)INFOH=ih;
+  const above=H-INFOH-TS;                                    // space between top bar and info panel
+  const ARC=clamp(above*0.12,30,56),LABELH=36;               // visible depth of the pinned star + caption height
+  PINY=TS+ARC;
+  const stageTop=TS+ARC+LABELH,stageBot=H-INFOH-10,h=Math.max(100,stageBot-stageTop);
+  CYF=stageTop+h/2;FIT=Math.min(0.70*W,0.92*h);
+  KB=Math.max(10,CYF+FIT/2-PINY);
+  LZ=S.map(s=>Math.log(FIT/(2*s.R)));
+  const top=72,bot=H-18,avail=bot-top,minRow=clamp(avail/(N+1.2),22,34),pad=10;
+  const total=s=>S.reduce((a,x)=>a+Math.max(2*x.R*s+pad,minRow),0);
+  let hi=0.42*W/(2*S[0].R),lo=0;
+  if(total(hi)<=avail)OV.s=hi;else{for(let k=0;k<50;k++){const mid=(lo+hi)/2;total(mid)<=avail?lo=mid:hi=mid;}OV.s=lo;}
+  OV.cx=0.62*W;OV.y=[];OV.r=[];OV.rh=[];
+  let y=top;
+  S.forEach(x=>{const rh=Math.max(2*x.R*OV.s+pad,minRow);OV.y.push(y+rh/2);OV.r.push(x.R*OV.s);OV.rh.push(rh);y+=rh;});
+}
+function cam(q){
+  const i=clamp(Math.floor(q),0,N-1),j=Math.min(N-1,i+1),t=i===j?0:q-i,e=sstep(t);
+  return {i,j,t,e,Z:Math.exp(lerp(LZ[i],LZ[j],e)),yc:lerp(Y[i],Y[j],e)};
+}
+function pinBottom(k,nat,c){        // bottom edge of star k: it stays in place, but a bigger star that was just passed hangs from the top
+  const d=(c.i+c.e)-k-1;
+  if(d>=0)return PINY-(PINY+60)*Math.min(d,1);    // d=0: pinned, d>=1: slid off the top
+  if(d>-1)return PINY+KB*(-d);                      // the star we are leaving travels up to the pin
+  return nat;                                       // not reached yet: natural position
+}
+function geometry(c,m){
+  const out=[],xc=lerp(W/2,OV.cx,m);
+  for(let k=0;k<N;k++){
+    const rf=S[k].R*c.Z,cyf=CYF+(Y[k]-c.yc)*c.Z,bf=pinBottom(k,cyf+rf,c);
+    if(m<=0){out.push({x:xc,y:bf-rf,r:rf});continue;}
+    const ro=Math.max(OV.r[k],1e-4),cyo=OV.y[k];
+    if(m>=1){out.push({x:xc,y:cyo,r:ro});continue;}
+    const r=Math.exp(lerp(Math.log(rf),Math.log(ro),m)),yb=lerp(bf,cyo+ro,m);
+    out.push({x:xc,y:yb-r,r});
+  }
+  return out;
+}
+function discPath(x,y,r){
+  cx.beginPath();
+  if(r<1500){cx.arc(x,y,r,0,6.2832);return;}
+  if(y<H/2){cx.moveTo(-10,-10);cx.lineTo(W+10,-10);
+    for(let sx=W+10;sx>=-10;sx-=6){const t=r*r-(sx-x)*(sx-x);cx.lineTo(sx,y+Math.sqrt(Math.max(t,0)));}}
+  else{cx.moveTo(-10,H+10);cx.lineTo(W+10,H+10);
+    for(let sx=W+10;sx>=-10;sx-=6){const t=r*r-(sx-x)*(sx-x);cx.lineTo(sx,y-Math.sqrt(Math.max(t,0)));}}
+  cx.closePath();
+}
+const CF='Collapse,"Arial Black","Helvetica Neue",Helvetica,Arial,sans-serif',HF='"Helvetica Neue",Helvetica,Arial,sans-serif';
+
+// ---------- drawing ----------
+function drawGlow(c,m,idx){
+  const a=S[c.i],b=S[c.j],e=c.e;
+  const col=[0,1,2].map(q=>lerp(a.col[q],b.col[q],e)),g=lerp(a.g,b.g,e);
+  const a0=(0.04+0.9*Math.pow(g,1.1))*(1-0.5*m);
+  const gx=lerp(W/2,OV.cx,m),gy=lerp(CYF,OV.y[idx],m);
+  const R=Math.hypot(W,H)*(0.28+0.85*g)*(1-0.25*m);
+  const gr=cx.createRadialGradient(gx,gy,0,gx,gy,R);
+  gr.addColorStop(0,rgba(col,a0));gr.addColorStop(.2,rgba(col,a0*.7));gr.addColorStop(.5,rgba(col,a0*.28));
+  gr.addColorStop(.8,rgba(col,a0*.07));gr.addColorStop(1,rgba(col,0));
+  cx.fillStyle=gr;cx.fillRect(0,0,W,H);
+  return {col,g};
+}
+function drawStars(geo,m,idx){
+  for(let k=0;k<N;k++){
+    const s=S[k],g=geo[k];
+    if(g.y+g.r<-30||g.y-g.r>H+30)continue;
+    if(g.r<1.6){
+      cx.fillStyle=rgba(s.col,1);cx.beginPath();cx.arc(g.x,g.y,1.7,0,6.2832);cx.fill();
+      cx.strokeStyle="rgba(255,255,255,.5)";cx.lineWidth=1;cx.beginPath();cx.arc(g.x,g.y,7.5,0,6.2832);cx.stroke();
+    }else{
+      if(g.r<400&&g.r>3){ // soft halo around the star itself, scaled by its light
+        const hg=cx.createRadialGradient(g.x,g.y,g.r,g.x,g.y,g.r+Math.min(0.32*W,g.r*0.9+30));
+        const ha=(0.12+0.5*s.g)*(1-0.6*m);hg.addColorStop(0,rgba(s.col,ha));hg.addColorStop(1,rgba(s.col,0));
+        cx.fillStyle=hg;cx.beginPath();cx.arc(g.x,g.y,g.r+Math.min(0.32*W,g.r*0.9+30),0,6.2832);cx.fill();
+      }
+      discPath(g.x,g.y,g.r);cx.fillStyle=rgba(s.col,1);cx.fill();
+      if(g.r<1500){cx.strokeStyle="rgba(21,13,13,.9)";cx.lineWidth=1.5;cx.stroke();}
+    }
+    if(m>0.5&&k===idx&&g.r<1500){cx.strokeStyle="#fff";cx.lineWidth=2;cx.beginPath();cx.arc(g.x,g.y,Math.max(g.r,2)+(g.r<3?9:6),0,6.2832);cx.stroke();}
+  }
+}
+function txt(t,x,y,font,col,align){cx.font=font;cx.fillStyle=col;cx.textAlign=align||"left";cx.fillText(t,x,y);}
+function focusLabels(geo,idx,alpha){
+  if(alpha<=0.02)return;
+  cx.globalAlpha=alpha;let lastY=-1e9;
+  const ref=S[idx].R;
+  for(let k=0;k<N;k++){
+    if(k<=idx)continue;
+    const g=geo[k],s=S[k],top=g.y-g.r,bot=g.y+g.r;
+    if(bot<70||top>H-8)continue;
+    const ratio=s.R/ref,same=ratio>0.95&&ratio<1.05;
+    const cap=same?"about the same size":ratio>1?num(ratio)+"× wider":num(1/ratio)+"× smaller";
+    const name=s.name.toUpperCase();
+    let lx,ly,al="left",inkc="#fff";
+    if(g.r>H*0.5&&g.y<0){ // huge star above: label inside the visible arc
+      ly=Math.min(bot-26,H*0.3);if(ly<92)continue;lx=g.x;al="center";inkc=lum(s.col)>0.55?"#150D0D":"#fff";
+    }else if(g.r>=8){
+      if(g.y<64||g.y>H-10)continue;
+      cx.font="400 12px "+CF;const w=Math.max(cx.measureText(name).width,70);
+      if(g.x+g.r+10+w<W-52){lx=g.x+g.r+10;ly=g.y;}else{lx=g.x-g.r-10;ly=g.y;al="right";}
+    }else{
+      if(g.y<64||g.y>H-10)continue;lx=g.x+16;ly=g.y;
+    }
+    if(Math.abs(ly-lastY)<30)continue;lastY=ly;
+    txt(name,lx,ly-1,"400 12px "+CF,inkc,al);
+    txt(cap,lx,ly+12,"400 10.5px "+HF,inkc==="#fff"?"rgba(255,255,255,.7)":"rgba(21,13,13,.75)",al);
+  }
+  cx.globalAlpha=1;
+}
+function pinLabels(geo,alpha){
+  if(alpha<=0.02)return;
+  for(let k=0;k<N-1;k++){
+    const g=geo[k],bot=g.y+g.r,al=clamp(1-Math.abs(bot-PINY)/70,0,1)*alpha;
+    if(al<0.03)continue;
+    const s=S[k],n=S[k+1],ratio=s.R/n.R,ly=bot+17;
+    cx.globalAlpha=al;
+    txt("▲ "+s.name.toUpperCase(),16,ly,"400 12px "+CF,"#fff");
+    txt(ratio<1.05?"about the same size as "+n.name:num(ratio)+"× wider than "+n.name,16,ly+13,"400 10.5px "+HF,"rgba(255,255,255,.78)");
+  }
+  cx.globalAlpha=1;
+}
+function overviewLabels(idx,alpha){
+  if(alpha<=0.02)return;
+  cx.globalAlpha=alpha;
+  for(let k=0;k<N;k++){
+    const s=S[k],y=OV.y[k],on=k===idx;
+    if(on){cx.fillStyle=rgba(s.acc,1);cx.fillRect(0,y-OV.rh[k]/2+3,5,OV.rh[k]-6);}
+    txt(s.name.toUpperCase(),16,y-1,"400 13px "+CF,on?rgba(s.acc,1):"#fff");
+    txt(num(s.R)+" R☉",16,y+12,"400 10.5px "+HF,"rgba(255,255,255,.62)");
+  }
+  cx.globalAlpha=1;
+}
+function draw(now){
+  const dt=Math.min(.05,Math.max(0,(now-last)/1000));last=now;
+  if(!drag.on){const d=pT-p;if(Math.abs(d)<.0008)p=pT;else p+=d*(1-Math.exp(-dt*9));}
+  const dv=ovT-ov;if(Math.abs(dv)<.002)ov=ovT;else ov+=dv*(1-Math.exp(-dt*8));
+  const m=sstep(clamp(ov,0,1)),c=cam(p),idx=clamp(Math.round(p),0,N-1);
+  const geo=geometry(c,m);G=geo;
+  cx.setTransform(DPR,0,0,DPR,0,0);cx.fillStyle="#000";cx.fillRect(0,0,W,H);
+  drawGlow(c,m,idx);
+  drawStars(geo,m,idx);
+  focusLabels(geo,idx,1-m*1.6);
+  pinLabels(geo,1-m*1.6);
+  overviewLabels(idx,m*1.6-0.6);
+  document.body.classList.toggle("ov",ov>0.5);
+  const bt=ovT?"×":"ALL";if($("allBtn").textContent!==bt)$("allBtn").textContent=bt;
+  if(idx!==curIdx)setInfo(idx);
+  const Ze=Math.exp(lerp(Math.log(c.Z),Math.log(OV.s),m));
+  const st="On this screen: Sun ⌀ "+pxText(2*Ze)+" · Earth ⌀ "+pxText(2*EARTH_R*Ze);
+  if(st!==lastScaleTxt){$("iScale").textContent=st;lastScaleTxt=st;}
+}
+
+// ---------- DOM info ----------
+function tagSet(el,t){if(!t){el.textContent="";el.style.visibility="hidden";return;}el.style.visibility="visible";el.textContent=t;el.className="tag "+t.split(" ")[0];}
+function setInfo(i){
+  curIdx=i;const s=S[i];
+  document.documentElement.style.setProperty("--acc",rgba(s.acc,1));
+  $("iCatT").textContent=s.cat;$("iName").textContent=s.name;
+  $("vR").innerHTML=num(s.R)+" R☉<small>"+(s.earth?"1 R⊕ · ":"")+lenText(s.R)+"</small>";tagSet($("tR"),s.tags.R);
+  $("vT").textContent=s.T?grp(s.T)+" K":"no own light";tagSet($("tT"),s.tags.T);
+  $("vL").innerHTML=s.L?num(s.L)+" L☉":"none · reflects sunlight";tagSet($("tL"),s.tags.L);
+  $("vA").textContent=s.age;tagSet($("tA"),s.ageTag);
+  $("iSrc").textContent=s.src;
+  document.querySelectorAll(".tick").forEach((t,k)=>t.classList.toggle("on",k===i));
+}
+
+// ---------- interaction ----------
+const drag={on:false,id:null,x0:0,y0:0,p0:0,moved:false,hist:[]};
+function step(d){const k=clamp(Math.round(pT)+d,0,N-1);if(ovT>0.5){p=pT=k;}else pT=k;hideHint();}
+function goTo(k){p=pT=k;}
+function hideHint(){const h=$("hint");if(h&&h.style.opacity!=="0"){h.style.opacity="0";}}
+function inDisc(g,x,y){
+  const dx=x-g.x;
+  if(g.r>1500){const t=g.r*g.r-dx*dx;if(t<0)return false;const s=Math.sqrt(t);return g.y<H/2?y<g.y+s:y>g.y-s;}
+  const rr=Math.max(g.r,18),dy=y-g.y;return dx*dx+dy*dy<=rr*rr;
+}
+function tap(x,y){
+  if(ov>0.5){
+    for(let k=0;k<N;k++)if(Math.abs(y-OV.y[k])<=OV.rh[k]/2&&x<W-52){goTo(k);ovT=0;hideHint();return k;}
+    return -1;
+  }
+  let best=-1;
+  for(let k=0;k<N;k++){const g=G[k];if(g.y+g.r<64||g.y-g.r>H)continue;if(inDisc(g,x,y)&&(best<0||g.r<G[best].r))best=k;}
+  if(best>=0&&best!==Math.round(pT)){pT=best;hideHint();}
+  return best;
+}
+cv.addEventListener("pointerdown",e=>{
+  try{cv.setPointerCapture(e.pointerId);}catch(_){}
+  drag.on=true;drag.id=e.pointerId;drag.moved=false;drag.x0=e.clientX;drag.y0=e.clientY;drag.p0=p;drag.hist=[[performance.now(),e.clientY]];
+});
+cv.addEventListener("pointermove",e=>{
+  if(!drag.on||e.pointerId!==drag.id)return;
+  const dy=e.clientY-drag.y0;if(!drag.moved&&Math.abs(dy)>8)drag.moved=true;
+  if(drag.moved&&ovT===0){p=clamp(drag.p0-dy/PITCH,0,N-1);pT=p;hideHint();}
+  drag.hist.push([performance.now(),e.clientY]);if(drag.hist.length>6)drag.hist.shift();
+});
+function endDrag(e,cancel){
+  if(!drag.on||e.pointerId!==drag.id)return;drag.on=false;
+  if(drag.moved){
+    if(ovT===0){
+      const h=drag.hist,a=h[0],b=h[h.length-1],v=h.length>1&&b[0]>a[0]?(b[1]-a[1])/(b[0]-a[0]):0;
+      let t=Math.round(p-v*220/PITCH);const base=Math.round(drag.p0);
+      t=clamp(t,base-3,base+3);pT=clamp(cancel?Math.round(p):t,0,N-1);
+    }
+  }else if(!cancel)tap(e.clientX,e.clientY);
+}
+cv.addEventListener("pointerup",e=>endDrag(e,false));
+cv.addEventListener("pointercancel",e=>endDrag(e,true));
+let wheelAcc=0,wheelT=0,wheelLock=0;
+addEventListener("wheel",e=>{
+  if(!$("menu").hidden)return;e.preventDefault();
+  const now=performance.now();if(now<wheelLock)return;
+  if(now-wheelT>160)wheelAcc=0;wheelT=now;wheelAcc+=e.deltaY;
+  if(Math.abs(wheelAcc)>=50){step(Math.sign(wheelAcc));wheelAcc=0;wheelLock=now+260;}
+},{passive:false});
+addEventListener("keydown",e=>{
+  if(e.key==="ArrowDown"||e.key==="PageDown"){step(1);e.preventDefault();}
+  else if(e.key==="ArrowUp"||e.key==="PageUp"){step(-1);e.preventDefault();}
+  else if(e.key==="o"||e.key==="O")toggleAll();
+  else if(e.key==="Escape")closeMenu();
+});
+function toggleAll(){ovT=ovT?0:1;if(ovT)p=pT=Math.round(pT);hideHint();}
+function openMenu(){$("menu").hidden=false;}
+function closeMenu(){$("menu").hidden=true;}
+$("up").onclick=()=>step(-1);$("down").onclick=()=>step(1);$("allBtn").onclick=toggleAll;
+$("menuBtn").onclick=openMenu;$("menuClose").onclick=closeMenu;
+$("mAll").onclick=()=>{closeMenu();if(!ovT)toggleAll();};
+
+// ---------- build ticks + menu list ----------
+S.forEach((s,i)=>{
+  const t=document.createElement("button");t.className="tick";t.setAttribute("aria-label",s.name);
+  t.onclick=()=>{if(ovT>0.5){goTo(i);}else pT=i;hideHint();};$("ticks").appendChild(t);
+  const li=document.createElement("li"),b=document.createElement("button");
+  b.innerHTML='<span class="n">'+String(i+1).padStart(2,"0")+'</span><span class="nm"></span><span class="rv">'+num(s.R)+' R☉</span>';
+  b.querySelector(".nm").textContent=s.name;
+  b.onclick=()=>{closeMenu();if(ovT)toggleAll();pT=i;hideHint();};li.appendChild(b);$("mlist").appendChild(li);
+});
+addEventListener("resize",layout);addEventListener("orientationchange",()=>setTimeout(layout,200));
+if(window.visualViewport)visualViewport.addEventListener("resize",layout);
+function loop(now){draw(now);requestAnimationFrame(loop);}
+if(N){setInfo(0);layout();if(document.fonts&&document.fonts.ready){document.fonts.ready.then(layout);}requestAnimationFrame(loop);}
+setTimeout(hideHint,6000);
+</script>
+</body>
+</html>
